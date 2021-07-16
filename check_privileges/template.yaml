@@ -1,0 +1,52 @@
+apiVersion: templates.gatekeeper.sh/v1beta1
+kind: ConstraintTemplate
+metadata:
+  name: checkprivileges 
+spec:
+  crd:
+    spec:
+      names:
+        kind: CheckPrivileges
+      validation:
+        openAPIV3Schema:
+          properties:
+            hostNetwork:
+              type: boolean
+            hostPID:
+              type: boolean
+            privileged:
+              type: boolean
+            allowPrivilegeEscalation:
+              type: boolean
+  targets:
+    - target: admission.k8s.gatekeeper.sh
+      rego: |
+        package checkprivileges
+
+        violation[{"msg": msg}] {
+          network_request := input.review.object.spec.hostNetwork
+          network_rule := input.parameters.hostNetwork
+          network_request != network_rule
+          msg := sprintf("Value hostNetwork is <%v>, but must be <%v>", [network_request, network_rule])
+        }
+
+        violation[{"msg": msg}] {
+          pid_request := input.review.object.spec.hostPID
+          pid_rule := input.parameters.hostPID
+          pid_request != pid_rule
+          msg := sprintf("Value hostPID is <%v>, but must be <%v>", [pid_request, pid_rule])
+        }
+
+        violation[{"msg": msg}] {
+          privileged_request := input.review.object.spec.containers[_].securityContext.privileged
+          privileged_rule := input.parameters.privileged
+          privileged_request != privileged_rule
+          msg := sprintf("Value privileged is <%v>, but must be <%v>", [privileged_request, privileged_rule])
+        }
+
+        violation[{"msg": msg}] {
+          escalation_request := input.review.object.spec.containers[_].securityContext.allowPrivilegeEscalation
+          escalation_rule := input.parameters.allowPrivilegeEscalation
+          escalation_request != escalation_rule
+          msg := sprintf("Process must not escalate privileges. Value <allowPrivilegeEscalation> must be <%v>", [escalation_rule])
+        }

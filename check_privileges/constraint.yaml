@@ -1,0 +1,18 @@
+apiVersion: constraints.gatekeeper.sh/v1beta1
+kind: CheckPrivileges
+metadata:
+  name: check-pod-privileges
+spec:
+  match:
+    kinds:
+      - apiGroups: [""]
+        kinds: ["Pod"]
+    excludedNamespaces:
+    - kube-system
+    - ceph-csi-cephfs
+    - ingress-nginx
+  parameters:
+    hostNetwork: false
+    hostPID: false
+    privileged: false
+    allowPrivilegeEscalation: false
